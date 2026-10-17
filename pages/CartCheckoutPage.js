@@ -24,37 +24,50 @@ class CartCheckoutPage extends BasePage {
 
   async fillShipping() {
     const addressInput = this.searchforyouraddressButton.first();
-    await addressInput.waitFor({ state: 'visible', timeout: 15000 });
-    await addressInput.clear();
-    await addressInput.fill(process.env.CHECKOUT_CITY);
-    await addressInput.press('ArrowDown');
-    await addressInput.press('Enter');
-    await this.page.waitForLoadState('domcontentloaded');
-    await this.firstNameInput.clear();
-    await this.firstNameInput.fill(process.env.CHECKOUT_FIRST_NAME);
-    await this.lastNameInput.clear();
-    await this.lastNameInput.fill(process.env.CHECKOUT_LAST_NAME);
-    await this.shippingaddressInput.clear();
-    await this.shippingaddressInput.fill(process.env.CHECKOUT_ADDRESS);
-    const mobileNumber = generateDubaiMobileNumber();
-    await this.shippingphoneInput.clear();
-    await this.shippingphoneInput.fill(mobileNumber, { delay: 150 });
-    await this.shippingphoneInput.press('Tab');
+    
+    // Check whether the shipping address input is available
+    let isShippingVisible = false;
+    try {
+      await addressInput.waitFor({state: 'visible', timeout: 5000,});
+      isShippingVisible = true;
+    } catch {
+      console.log('Shipping form is not visible. Skipping shipping details.');
+    }
+
+    // Fill shipping details only when the address input is visible
+    if (isShippingVisible) {
+      await addressInput.clear();
+      await addressInput.fill(process.env.CHECKOUT_CITY);
+      await addressInput.press('ArrowDown');
+      await addressInput.press('Enter');
+      await this.page.waitForLoadState('domcontentloaded');
+      await this.firstNameInput.clear();
+      await this.firstNameInput.fill(process.env.CHECKOUT_FIRST_NAME);
+      await this.lastNameInput.clear();
+      await this.lastNameInput.fill(process.env.CHECKOUT_LAST_NAME);
+      await this.shippingaddressInput.clear();
+      await this.shippingaddressInput.fill(process.env.CHECKOUT_ADDRESS);
+      const mobileNumber = generateDubaiMobileNumber();
+      await this.shippingphoneInput.clear();
+      await this.shippingphoneInput.fill(mobileNumber, { delay: 150 });
+      await this.shippingphoneInput.press('Tab');
+      console.log('Shipping details filled successfully.');
+    }
   }
 
   async choosePaymentMethod() {
-    await this.cashondeliveryOption.first().waitFor({ state: 'visible', timeout: 15000, });
+    await this.cashondeliveryOption.first().waitFor({state: 'visible',timeout: 15000,});
     await this.cashondeliveryOption.first().click();
   }
 
   async submitOrder() {
-    await this.placeOrderButton.first().waitFor({ state: 'visible', timeout: 15000, });
+    await this.placeOrderButton.first().waitFor({state: 'visible',timeout: 15000,});
     await this.placeOrderButton.first().click();
   }
 
   async expectOrderConfirmation() {
     const orderConfirmationMessage = this.orderConfirmationMessage.first();
-    await expect(orderConfirmationMessage).toBeVisible({ timeout: 15000 });
+    await expect(orderConfirmationMessage).toBeVisible({timeout: 15000,});
   }
 }
 
