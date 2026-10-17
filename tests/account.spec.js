@@ -1,6 +1,5 @@
 const { test, expect } = require('@playwright/test');
 const { AccountPage } = require('../pages/AccountPage');
-const { account } = require('../utils/testData');
 
 test.describe('Account flows', () => {
   test('register a new user', async ({ page }) => {
