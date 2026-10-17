@@ -1,0 +1,22 @@
+{
+  "name": "sharaf-dg-qa-automation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright end-to-end UI automation for Sharaf DG staging",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:debug": "PWDEBUG=1 playwright test",
+    "report": "playwright show-report",
+    "install:browsers": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "dotenv": "^16.6.1"
+  },
+  "dependencies": {
+    "@google-cloud/local-auth": "^3.0.1",
+    "googleapis": "^186.0.0"
+  }
+}
