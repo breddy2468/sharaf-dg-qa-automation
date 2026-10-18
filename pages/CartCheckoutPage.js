@@ -13,7 +13,10 @@ class CartCheckoutPage extends BasePage {
     this.shippingphoneInput = page.locator('//input[@name="shipping_phone"]');
     this.cashondeliveryOption = page.locator("//label[contains(text(), 'Cash on Delivery')]");
     this.placeOrderButton = page.locator('//button[@value="Place order"]');
-    this.orderConfirmationMessage = page.locator('//h1[contains(text(), "Thank you. Your order has been received.")]');
+    this.orderConfirmationMessage = page.locator('h3.woocommerce-thankyou-order-received');
+    this.orderNumber = page.locator('strong').filter({hasText: /Order number\s+STGAE\d+/,});
+    this.codConfirmationMessage = page.getByText(/You will receive an SMS shortly to verify and confirm your cash-on-delivery order/i);
+    this.codCancellationMessage = page.getByText(/Your order will be cancelled if not confirmed within 6 hours/i);
   }
 
   async proceedToCheckout() {
@@ -24,11 +27,11 @@ class CartCheckoutPage extends BasePage {
 
   async fillShipping() {
     const addressInput = this.searchforyouraddressButton.first();
-    
+
     // Check whether the shipping address input is available
     let isShippingVisible = false;
     try {
-      await addressInput.waitFor({state: 'visible', timeout: 5000,});
+      await addressInput.waitFor({ state: 'visible', timeout: 5000, });
       isShippingVisible = true;
     } catch {
       console.log('Shipping form is not visible. Skipping shipping details.');
@@ -56,19 +59,30 @@ class CartCheckoutPage extends BasePage {
   }
 
   async choosePaymentMethod() {
-    await this.cashondeliveryOption.first().waitFor({state: 'visible',timeout: 15000,});
+    await this.cashondeliveryOption.first().waitFor({ state: 'visible', timeout: 15000, });
     await this.cashondeliveryOption.first().click();
   }
 
   async submitOrder() {
-    await this.placeOrderButton.first().waitFor({state: 'visible',timeout: 15000,});
+    await this.placeOrderButton.first().waitFor({ state: 'visible', timeout: 15000, });
     await this.placeOrderButton.first().click();
   }
 
   async expectOrderConfirmation() {
-    const orderConfirmationMessage = this.orderConfirmationMessage.first();
-    await expect(orderConfirmationMessage).toBeVisible({timeout: 15000,});
-  }
+  // Verify confirmation heading
+  await expect(this.orderConfirmationMessage).toBeVisible({timeout: 15000,});
+  await expect(this.orderConfirmationMessage).toContainText(/Thank you\./);
+
+  // Verify dynamically generated order number
+  await expect(this.orderNumber).toBeVisible({timeout: 10000,});
+  const orderNumberText = await this.orderNumber.innerText();
+  console.log(`Order number: ${orderNumberText.trim()}`);
+  
+  // Verify COD confirmation instructions
+  await expect(this.codConfirmationMessage).toBeVisible({timeout: 10000,});
+  await expect(this.codCancellationMessage).toBeVisible({timeout: 10000,});
+  console.log('Order confirmation validated successfully.');
+}
 }
 
 module.exports = { CartCheckoutPage };
