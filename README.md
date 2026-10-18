@@ -1,71 +1,114 @@
-# Sharaf DG — QA Automation Engineer Take-Home
+# Sharaf DG — QA Automation
 
-End-to-end UI automation using **Playwright + JavaScript**, with a Page Object Model (POM) structure. The project targets the Sharaf DG staging website and Chromium (Chrome-compatible).
+End-to-end UI automation for the Sharaf DG staging website using **Playwright, JavaScript, and the Page Object Model (POM)**.
 
-## Included flows
+## Automated flows
 
-- Registration: open registration page, fill account details, submit, and check for an account/welcome state.
-- Login: sign in with a dedicated test account and check for a signed-in state.
-- Product purchase: find the iPhone 14 Pro 256GB Silver, add to cart, proceed through shipping and payment, submit an order, and verify confirmation.
+- **Account:** registration and login scenarios (`tests/account.spec.js`).
+- **Checkout:** opens the iPhone 14 Pro Silver product, adds it to the cart, fills shipping details, selects a payment method, and checks the order confirmation when submission is enabled (`tests/checkout.spec.js`).
 
-> **Important:** The checkout test is disabled by default because submitting it creates a test order. Enable it only after confirming the staging environment, payment method, and test data are safe. Use a staging-approved account and never use real payment details.
+> **Checkout safety:** order submission is disabled unless `ALLOW_ORDER_SUBMISSION=true` is set. Confirm with the staging owner that test orders and the selected payment method are approved before enabling it. Never use real payment details.
 
 ## Prerequisites
 
-- Node.js 18+ (Node.js 20 LTS recommended)
+- Node.js 18 or later (Node.js 20 LTS recommended)
 - npm
-- Latest stable Google Chrome is not required; Playwright installs its own Chromium build. You can also configure a locally installed browser if required by your team.
+- A locally installed **Google Chrome** or **Microsoft Edge** for the browser-channel commands below
+- Approved staging Basic Auth credentials and test data
+
+The Playwright configuration uses the installed Chrome or Edge channel, opens a visible browser, and runs with one worker. `BROWSER` selects the browser channel (`chrome` by default, or `edge`).
 
 ## Setup
 
-1. Clone or download this repository.
+1. Open a terminal in the project root.
 2. Install dependencies:
 
    ```bash
    npm install
-   npx playwright install chromium
    ```
 
-3. Copy `.env.example` to `.env`.
-4. Fill in the staging Basic Auth password and your dedicated test account details. Do not commit `.env`.
-5. Verify the exact iPhone product URL in staging. If known, set `IPHONE_PRODUCT_URL` in `.env` to avoid relying on site search.
+3. Create a local `.env` file in the project root. Add the staging and test values required by your environment, for example:
 
-The staging Basic Auth password should be stored locally in `.env` or in CI secrets, never hard-coded in source control.
+   ```dotenv
+   BASE_URL=https://uae.sdgstage.com/
+   BASIC_AUTH_USERNAME=replace_with_staging_username
+   BASIC_AUTH_PASSWORD=replace_with_staging_password
+   TEST_EMAIL=replace_with_staging_test_email
+   CHECKOUT_FIRST_NAME=replace_with_test_first_name
+   CHECKOUT_LAST_NAME=replace_with_test_last_name
+   CHECKOUT_CITY=Dubai
+   CHECKOUT_ADDRESS=replace_with_test_address
+   # Optional:
+   # CHECKOUT_PHONE=replace_with_approved_test_phone
+   # ALLOW_ORDER_SUBMISSION=true
+   ```
 
-## Run tests
+   Replace every example value with staging-approved values. Do not paste secrets into source code, README files, issue trackers, or chat messages.
+
+4. Confirm the base URL and selectors match the current staging deployment before running tests.
+
+### Keep credentials private
+
+- **Never commit `.env`, staging credentials, OTPs, `credentials.json`, or `token.json` to GitHub.**
+- These sensitive files should remain local and are listed in `.gitignore`. Verify with `git status --short` before committing.
+- If a secret has already been committed or pushed, removing the file in a later commit is not enough: revoke/rotate the exposed credential and follow your repository's secret-remediation process.
+- For CI, use the CI platform's secret store instead of committing credentials.
+
+## Step 3 — Execute the tests
+
+Run commands from the project root.
+
+### Run all tests
 
 ```bash
-# All tests (checkout safely skipped unless explicitly enabled)
 npm test
-
-# Visible browser
-npm run test:headed
-
-# Playwright interactive runner
-npm run test:ui
-
-# HTML report
-npm run report
 ```
 
-Run a single suite:
+### Run with a visible browser
+
+```bash
+npm run test:headed
+```
+
+### Run registration and login tests only
 
 ```bash
 npx playwright test tests/account.spec.js
+```
+
+### Run checkout test
+
+```bash
 npx playwright test tests/checkout.spec.js
 ```
 
-To run checkout end-to-end, first confirm with the assignment contact that test orders are allowed and that the selected payment method is configured for staging. Then set:
+The checkout test will not submit an order unless `ALLOW_ORDER_SUBMISSION=true` is explicitly configured and the staging owner has approved it.
 
-```env
-ALLOW_ORDER_SUBMISSION=true
+### Run with Google Chrome (Windows Command Prompt)
+
+```bat
+set "BROWSER=chrome" && npx playwright test --headed --workers=1
 ```
 
-Run only the checkout test:
+### Run with Microsoft Edge (Windows Command Prompt)
+
+```bat
+set "BROWSER=edge" && npx playwright test --headed --workers=1
+```
+
+These `set` commands apply the variable to that command invocation in Windows Command Prompt. They select the installed Chrome (`chrome`) or Edge (`msedge`) channel configured in `playwright.config.js`.
+
+### Other useful commands
 
 ```bash
-npx playwright test tests/checkout.spec.js --headed
+# Open Playwright's interactive test UI
+npm run test:ui
+
+# Open the latest HTML report
+npm run report
 ```
+
+The project config already sets `workers: 1` and `headless: false`, so tests run sequentially in a visible browser with the current configuration. `--workers=1` is included in the browser-specific commands for clarity.
 
 ## Project structure
 
@@ -80,61 +123,39 @@ npx playwright test tests/checkout.spec.js --headed
 │   ├── account.spec.js
 │   └── checkout.spec.js
 ├── utils/
+│   ├── gmailOtp.js
 │   └── testData.js
-├── .env.example
 ├── playwright.config.js
-└── package.json
+├── package.json
+├── package-lock.json
+└── README.md
 ```
 
-- **Page objects** encapsulate selectors and actions.
-- **Tests** express business flows and assertions.
-- **BasePage** provides shared locator helpers.
-- Playwright auto-waits for most actions; explicit assertions are used for page readiness and outcomes. No fixed sleeps are used for general synchronization.
+- **`pages/`** contains page objects, selectors, and page-level actions.
+- **`tests/`** contains Playwright test scenarios.
+- **`utils/`** contains shared test data and Gmail OTP helper logic.
+- **`playwright.config.js`** loads `.env`, configures the browser channel, staging Basic Auth, timeouts, and test artifacts.
+- **`playwright-report/`** and **`test-results/`** are generated during test runs and should not be committed.
 
-## Assumptions and limitations
+## Configuration notes
 
-1. The staging website is available and the supplied Basic Auth credentials remain valid.
-2. Magento-style account routes (`/customer/account/login/` and `/customer/account/create/`) are used by the staging deployment. Update routes if the site uses different paths.
-3. The exact product URL, selectors, shipping fields, and payment methods can vary by staging build. The locators intentionally use accessible roles and common field attributes first; inspect the current DOM and refine selectors if the UI differs.
-4. Registration uses a unique email address for repeatability. The domain `example.com` is reserved for examples; replace it with a staging-approved test email domain if registration email verification is required.
-5. Login uses a pre-created test account from `.env`; it is separate from the account created by the registration test.
-6. Shipping field formats, required region/state fields, OTP, CAPTCHA, and email verification may require test-environment configuration or approved test hooks. Do not bypass production security controls.
-7. The checkout test is gated and does not submit an order unless `ALLOW_ORDER_SUBMISSION=true`.
-8. The test uses the first available payment method if COD is not available. Confirm that this is a non-charging staging payment option before enabling order submission.
+- `BROWSER`: `chrome` or `edge`; defaults to `chrome`.
+- `BASE_URL`: staging base URL; defaults to `https://uae.sdgstage.com/`.
+- `BASIC_AUTH_USERNAME` and `BASIC_AUTH_PASSWORD`: required for staging Basic Auth.
+- `TEST_EMAIL`: account email used by account flows. The current test-data helper contains a fallback; set an approved staging test email in `.env` for your environment.
+- `CHECKOUT_FIRST_NAME`, `CHECKOUT_LAST_NAME`, `CHECKOUT_CITY`, `CHECKOUT_ADDRESS`: checkout shipping values. The current helper contains defaults for some fields; prefer explicit staging test values.
+- `CHECKOUT_PHONE`: optional phone value. If omitted, the helper generates a Dubai-style mobile number.
+- `ALLOW_ORDER_SUBMISSION`: set to `true` only after explicit approval to create a staging test order.
 
-## AI Usage
+## Reports and troubleshooting
 
-AI assistance was used transparently to accelerate framework design and initial implementation. The final code must be reviewed against the live staging DOM before submission.
+- **Missing Basic Auth variables:** add `BASIC_AUTH_USERNAME` and `BASIC_AUTH_PASSWORD` to `.env`.
+- **Chrome or Edge fails to launch:** ensure the selected browser is installed locally and the `BROWSER` value is exactly `chrome` or `edge`.
+- **Element or route not found:** inspect the live staging DOM and update the relevant page object; staging routes and selectors can change.
+- **Registration or login fails:** verify the staging account, route, and any required email verification/OTP process.
+- **Checkout fails at shipping/payment:** confirm required fields and the staging payment setup. Keep order submission disabled until approved.
+- **HTML report:** run `npm run report` after a test run to open the generated Playwright report.
 
-### Tool used
+## AI usage and validation
 
-- **ChatGPT (OpenAI):** used to structure the Playwright project, draft POM classes, suggest test coverage, propose robust locator strategies, scaffold the README, and add a safety gate around order submission.
-
-### Key prompts used
-
-- “Create an end-to-end Playwright JavaScript test framework using Page Object Model for registration, login, and an iPhone product checkout flow.”
-- “Separate page objects from test specs and centralize reusable navigation and locator helpers.”
-- “Use role-based locators and resilient field selectors; add explicit assertions for registration, login, cart, and order confirmation.”
-- “Add setup instructions, assumptions, execution commands, and a detailed AI Usage section to README.”
-- “Make checkout order submission opt-in so the test cannot accidentally create orders by default.”
-
-### Accepted, modified, and rejected output
-
-- **Accepted:** Playwright Test, JavaScript, POM separation, trace/screenshots on failure, environment-based configuration, and test-specific assertions.
-- **Modified:** Credentials and test data are read from `.env`; the product URL can be configured; checkout submission is guarded by `ALLOW_ORDER_SUBMISSION=true`.
-- **Not treated as verified:** exact selectors, routes, product search results, and checkout behavior. These must be confirmed on the actual staging site, because AI-generated selectors cannot establish that a live UI is unchanged.
-- **Rejected:** hard-coding credentials, using real card data, and automatically submitting an order during every test run.
-
-### Review and validation performed
-
-- Reviewed the generated project for separation of concerns, configuration hygiene, and an explicit checkout safety gate.
-- The test suite has **not** been represented as successfully executed against staging in this generated deliverable. Before submission, run it against the live staging website, inspect failures/traces, update selectors based on the actual DOM, and document the real results.
-- Review all code yourself and be ready to explain each page object, locator, assertion, and safety assumption in the follow-up discussion.
-
-## Troubleshooting
-
-- **Login/registration route not found:** verify the staging site's current routes and update `AccountPage.js`.
-- **Field/button not found:** inspect with `npx playwright test --headed` or `npm run test:ui`, then update the relevant page object.
-- **Basic Auth fails:** confirm the credentials in `.env`; do not put them in Git.
-- **Registration email verification/OTP appears:** request a staging-approved test account or a test-mode mechanism from the assignment contact.
-- **Checkout fails at address/payment:** update required fields and payment selectors based on the staging checkout UI. Do not enable order submission until the staging team approves it.
+ChatGPT was used to assist with framework structure, Page Object Model organization, locator strategies, README documentation, and the checkout order-submission safety gate. Review the code and validate selectors and flows against the live staging site before relying on results. This README update does not claim that the tests were executed successfully against staging.
