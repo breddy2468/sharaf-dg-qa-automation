@@ -158,4 +158,6 @@ The project config already sets `workers: 1` and `headless: false`, so tests run
 
 ## AI usage and validation
 
-ChatGPT was used to assist with framework structure, Page Object Model organization, locator strategies, README documentation, and the checkout order-submission safety gate. Review the code and validate selectors and flows against the live staging site before relying on results. This README update does not claim that the tests were executed successfully against staging.
+ChatGPT was used to assist with the framework structure, Page Object Model (POM) organization, locator strategy suggestions, README documentation, and the checkout order-submission safety gate. GitHub Copilot was also used to help update the automation code and locators.
+
+AI-assisted code and locator suggestions must be reviewed. Validate selectors, test data, and end-to-end flows against the live staging site before relying on the results. Keep `.env` private and never commit staging credentials, tokens, or other secrets to GitHub. This documentation update does not claim that the tests were executed successfully against staging.
